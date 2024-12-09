@@ -24,7 +24,8 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ""
   }
-})
+  // Enabling createdAt and updatedAt
+}, { timestamps: true })
 
 const User = mongoose.model('User', UserSchema)
 
