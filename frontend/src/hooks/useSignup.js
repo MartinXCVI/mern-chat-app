@@ -10,10 +10,9 @@ const useSignup = () => {
   const { setAuthUser } = useAuthContext()
 
   const signup = async ({ fullName, username, password, confirmPass, gender })=> {
+
     const success = handleInputErrors({ fullName, username, password, confirmPass, gender })
-
     if(!success) return
-
     setLoading(true)
 
     try {
@@ -28,7 +27,7 @@ const useSignup = () => {
         throw new Error(data.error)
       }
       
-      // Local storage
+      // Store user in localStorage and update context
       localStorage.setItem("chat-user", JSON.stringify(data))
       setAuthUser(data)
 

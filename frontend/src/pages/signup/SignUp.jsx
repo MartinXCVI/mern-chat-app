@@ -30,6 +30,10 @@ const SignUp = () => {
     await signup(inputs)
   }
 
+  const loadingSpinner = (
+    <span className="loading loading-spinner"></span>
+  )
+
   return (
     <div className="flex flex-col items-center justify-center min-w-96 mx-auto">
       <div className="w-full p-6 rounded-lg shadow-md bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-5">
@@ -99,8 +103,11 @@ const SignUp = () => {
           </Link>
 
           <div>
-            <button className="btn btn-block btn-sm mt-2 border border-slate-700">
-              Sign Up
+            <button
+              className="btn btn-block btn-sm mt-2 border border-slate-700"
+              disabled={loading}
+            >
+              { loading ? (loadingSpinner) : "Sign Up" }
             </button>
           </div>
         </form>
