@@ -1,3 +1,4 @@
+import { useSocketContext } from '../../context/SocketContext'
 import useConversation from '../../store/useConversation'
 
 const Conversation = ({ conversation, lastIndex }) => {
@@ -7,6 +8,8 @@ const Conversation = ({ conversation, lastIndex }) => {
   const { selectedConversation, setSelectedConversation } = useConversation()
 
   const isSelected = selectedConversation?._id === conversation._id
+  const { onlineUsers } = useSocketContext()
+  const isOnline = onlineUsers.includes(conversation._id)
 
   const divLine = (
     <div className="divider my-0 py-0 h-1"></div>
@@ -20,7 +23,7 @@ const Conversation = ({ conversation, lastIndex }) => {
         }
         onClick={()=> setSelectedConversation(conversation)}
       >
-        <div className="avatar online">
+        <div className={`avatar ${isOnline ? 'online' : ''}`}>
           <figure className="w-12 rounded-full">
             <img
               src={ profilePic }
