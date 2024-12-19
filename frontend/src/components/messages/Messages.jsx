@@ -3,10 +3,13 @@ import useGetMessages from "../../hooks/useGetMessages"
 import Message from "./Message"
 import MessageSkeleton from "../skeletons/MessageSkeleton"
 import { useEffect, useRef } from "react"
+import useListenMessages from "../../hooks/useListenMessages"
 
 const Messages = () => {
 
   const { messages, loading } = useGetMessages()
+  // Listens for any incoming messages from the socket
+  useListenMessages()
   const lastMessageRef = useRef()
 
   useEffect(()=> {
