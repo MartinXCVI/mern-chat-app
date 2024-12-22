@@ -25,6 +25,9 @@ export const sendMessage = async (req, res)=> {
       receiverId,
       message: message,
     })
+    if(!newMessage) {
+      res.status(400).json({ message: "Message content is required!" })
+    }
     // Pushing the message to the messages array
     if(newMessage) {
       conversation.messages.push(newMessage._id)

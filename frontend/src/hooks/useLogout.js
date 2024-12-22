@@ -6,31 +6,46 @@ const useLogout = () => {
   
   const [loading, setLoading] = useState(false)
   const { setAuthUser } = useAuthContext()
+  const [error, setError] = useState(null)
 
   const logout = async ()=> {
 
     setLoading(true)
+    setError(null)
+
+    const controller = new AbortController()
+    const signal = controller.signal
 
     try {
       const response = await fetch("/api/auth/logout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        signal
       })
-      const data = await response.json()
-      if(data.error) {
-        throw new Error(data.error)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Logout failed")
       }
 
+      // Remove user data from localStorage and update context
       localStorage.removeItem("chat-user")
       setAuthUser(null)
+      toast.success("Logged out successfully!")
+
     } catch(error) {
-      console.error(error)
-      toast.error(error.message)
+      if (error.name === "AbortError") {
+        console.log("Logout request aborted")
+      } else {
+        console.error(error)
+        setError(error.message)
+        toast.error(error.message)
+      }
     } finally {
       setLoading(false)
     }
   } // End of logout
-  return { loading, logout }
+  return { loading, error, logout }
 }
 
 export default useLogout

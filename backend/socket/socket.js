@@ -24,14 +24,20 @@ io.on("connection", (socket)=> {
   const userId = socket.handshake.query.userId
   if(userId !== "undefined") {
     userSocketMap[userId] = socket.id
+  } else {
+    console.warn(`Invalid userId: ${userId}`);
   }
+  
   // Send events to all connected clients
-  io.emit("getOnlineUsers", Object.keys(userSocketMap))
+  socket.broadcast.emit("getOnlineUsers", Object.keys(userSocketMap))
+  
 
   // Listens to the events. Can be used both on client and server side
   socket.on("disconnect", ()=> {
     console.log(`User disconnected: ${socket.id}`)
-    delete userSocketMap[userId]
+    if (userId && userSocketMap[userId] === socket.id) {
+      delete userSocketMap[userId]
+    }
     io.emit("getOnlineUsers", Object.keys(userSocketMap))
   })
 })

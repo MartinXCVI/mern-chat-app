@@ -6,10 +6,19 @@ const useSendMessage = () => {
   
   const [loading, setLoading] = useState(false)
   const { messages, setMessages, selectedConversation } = useConversation()
+  const [error, setError] = useState(null);
 
   const sendMessage = async (message)=> {
+    if (!message?.trim()) {
+      toast.error("Message cannot be empty")
+      return
+    }
 
     setLoading(true)
+    setError(null)
+
+    const controller = new AbortController()
+    const signal = controller.signal
 
     try {
       const response = await fetch(`/api/messages/send/${selectedConversation._id}`, {
@@ -17,26 +26,35 @@ const useSendMessage = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message }),
+        signal
       })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to send message")
+      }
 
       const data = await response.json()
 
-      if(data.error) {
-        throw new Error(data.error)
-      }
-
-      setMessages([...messages, data])
+      setMessages((prevMessages) => [...prevMessages, data])
 
     } catch(error) {
-      console.error(error)
-      toast.error(error.message)
+      if (error.name === "AbortError") {
+        console.log("Message sending aborted")
+      } else {
+        console.error(error)
+        setError(error.message)
+        toast.error(error.message)
+      }
     } finally {
       setLoading(false)
     }
+
+    return ()=> controller.abort();
   }
 
-  return { sendMessage, loading }
+  return { sendMessage, loading, error }
 
 }
 
