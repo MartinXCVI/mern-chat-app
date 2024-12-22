@@ -29,21 +29,25 @@ const SearchInput = () => {
     } else {
       toast.error('No such user found')
     }
-
   }
 
   return (
-    <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+    <form onSubmit={handleSearchSubmit} className="flex justify-between items-center gap-2">
       <input
         type="text"
         placeholder="Search..."
         id="search-input"
-        className="input input-bordered rounded-full"
+        className="max-w-[75%] input input-bordered rounded-full"
         value={search}
         onChange={(event)=> setSearch(event.target.value)}
+        title="Search conversation input"
       />
-      <button type="submit" className="btn btn-circle bg-sky-500 text-white">
-        <BsSearch className="w-6 h-6 outline-none" />
+      <button
+        type="submit"
+        className="btn btn-circle bg-emerald-500 text-white"
+        title="Search conversation button"
+      >
+        <BsSearch className="min-w-5 min-h-5 outline-none" />
       </button>
     </form>
   )

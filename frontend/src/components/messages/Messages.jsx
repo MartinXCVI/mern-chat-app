@@ -14,12 +14,12 @@ const Messages = () => {
 
   useEffect(()=> {
     setTimeout(()=> {
-      lastMessageRef.current.scrollIntoView({ behavior: "smooth" })
+      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" })
     }, 0)
   }, [messages])
 
   return (
-    <div className="px-4 flex-1 overflow-auto">
+    <div className="max-h-[80vh] px-4 flex-1 overflow-auto">
 
       { !loading && messages.length > 0 && messages.map((message)=> (
         <div

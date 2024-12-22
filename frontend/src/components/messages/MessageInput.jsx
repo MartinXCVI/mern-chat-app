@@ -31,8 +31,13 @@ const MessageInput = () => {
           placeholder="Send a message"
           value={message}
           onChange={(event)=> setMessage(event.target.value)}
+          title="Message input"
         />
-        <button type="submit" className="absolute inset-y-0 end-0 flex items-center pe-3">
+        <button
+          type="submit"
+          className="absolute inset-y-0 end-0 flex items-center pe-3"
+          title="Send message button"
+        >
           { loading ? loadingSpinner : <GrSend /> }
         </button>
       </div>
