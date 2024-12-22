@@ -3,6 +3,7 @@ import express from 'express'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import path from 'node:path'
 // Routes imports
 import authRoutes from './routes/auth.routes.js'
 import messageRoutes from './routes/message.routes.js'
@@ -14,6 +15,9 @@ import { app, server } from './socket/socket.js'
 
 
 const PORT = process.env.PORT || 5000
+
+const __dirname = path.resolve()
+
 dotenv.config()
 
 /* Middleware for parsing the incoming 
@@ -24,7 +28,7 @@ cookies sent from the client */
 app.use(cookieParser())
 
 app.use(cors({
-  origin: "http://localhost:5173", // React dev server
+  origin: "https://mernchatapp.onrender.com", // React dev server
   credentials: true, // Allows cookies to be sent
 }))
 
@@ -32,6 +36,12 @@ app.use(cors({
 app.use('/api/auth', authRoutes)
 app.use('/api/messages', messageRoutes)
 app.use('/api/users', userRoutes)
+
+app.use(express.static(path.join(__dirname, "frontend", "dist")))
+
+app.get("*", (req, res)=> {
+  res.sendFile(path.join(__dirname, "frontend", "dist", "index.html"))
+})
 
 server.listen(PORT, ()=> {
   connectDB()
