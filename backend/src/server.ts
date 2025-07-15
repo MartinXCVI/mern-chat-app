@@ -9,6 +9,10 @@ import connectDB from './config/dbConnection.js'
 const app = express()
 connectDB()
 
+/* MIDDLEWARES */
+app.use(express.json())
+
+
 /* ROUTES */
 import authRouter from './routes/auth.routes.js'
 

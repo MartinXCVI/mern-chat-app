@@ -6,7 +6,11 @@ dotenv.config()
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT_ENV: z.string(),
-  DATABASE_URI: z.string()
+  DATABASE_URI: z.string(),
+  SALT_ROUNDS: z.string().transform((val): number => parseInt(val, 10)),
+  JWT_SECRET: z.string(),
+  JWT_REFRESH_SECRET: z.string(),
+
 })
 
 const safeParsed = envSchema.safeParse(process.env)
@@ -22,4 +26,7 @@ export const {
   NODE_ENV,
   PORT_ENV,
   DATABASE_URI,
+  SALT_ROUNDS,
+  JWT_SECRET,
+  JWT_REFRESH_SECRET
 } = env
