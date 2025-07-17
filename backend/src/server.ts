@@ -4,6 +4,7 @@ import { PORT_ENV } from './config/env.js'
 /* SERVER SETUP */
 import express from 'express'
 import connectDB from './config/dbConnection.js'
+import cookieParser from 'cookie-parser'
 
 
 const app = express()
@@ -11,6 +12,7 @@ connectDB()
 
 /* MIDDLEWARES */
 app.use(express.json())
+app.use(cookieParser())
 
 
 /* ROUTES */

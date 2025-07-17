@@ -10,7 +10,9 @@ const envSchema = z.object({
   SALT_ROUNDS: z.string().transform((val): number => parseInt(val, 10)),
   JWT_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
-
+  CLOUDINARY_CLOUD_NAME: z.string(),
+  CLOUDINARY_API_KEY: z.string(),
+  CLOUDINARY_API_SECRET: z.string()
 })
 
 const safeParsed = envSchema.safeParse(process.env)
@@ -28,5 +30,8 @@ export const {
   DATABASE_URI,
   SALT_ROUNDS,
   JWT_SECRET,
-  JWT_REFRESH_SECRET
+  JWT_REFRESH_SECRET,
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET
 } = env

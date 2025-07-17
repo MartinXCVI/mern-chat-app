@@ -1,8 +1,13 @@
 import { Router } from 'express'
-import { signUp, login, logout } from '../controllers/auth.controllers.js'
+import { signUp, login, logout, updateProfile, isAuthenticated } from '../controllers/auth.controllers.js'
+import { protectRoute } from '../middlewares/protectRoute.js'
 
 // Router setup
 const authRouter = Router()
+
+/* GET routes */
+// Check if user is authenticated
+authRouter.get('/is-auth', protectRoute, isAuthenticated)
 
 /* POST routes */
 // Registering a new user
@@ -11,5 +16,9 @@ authRouter.post('/signup', signUp)
 authRouter.post('/login', login)
 // Log out a user
 authRouter.post('/logout', logout)
+
+/* PUT routes */
+// Updating user profile
+authRouter.put('/update-profile', protectRoute, updateProfile)
 
 export default authRouter

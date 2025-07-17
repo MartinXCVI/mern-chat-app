@@ -9,6 +9,8 @@ import { SALT_ROUNDS, NODE_ENV } from "../config/env.js"
 /* Helprs/Utilities */
 import { generateAccessToken } from "../helpers/generateAccessToken.js"
 import { generateRefreshToken } from "../helpers/generateRefreshToken.js"
+import cloudinary from "../lib/cloudinary.js"
+import { UploadApiResponse } from "cloudinary"
 
 
 /**
@@ -171,3 +173,85 @@ export const logout = (req: Request, res: Response) => {
   }
   return
 } // End of logout controller
+
+
+/*
+* @desc: Updates user's profile pic
+* @route: /api/auth/uptdate-profile
+* @method: PUT
+* @access: Private
+*/
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { profilePic } = req.body
+    const userId = req.user._id
+    if(!profilePic) {
+      res.status(400).json({
+        success: false,
+        message: "Profile pic is required"
+      })
+      return
+    }
+    if(typeof profilePic !== "string" || !profilePic.trim()) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid profile pic input"
+      })
+      return
+    }
+    let uploadResponse: UploadApiResponse | undefined = undefined
+    try {
+      uploadResponse = await cloudinary.uploader.upload(profilePic)
+    } catch(uploadError) {
+      console.error(`Cloudinary upload error: ${uploadError instanceof Error ? uploadError.message : uploadError}`)
+      res.status(500).json({
+        success: false,
+        message: "Failed to upload picture to Cloudinary",
+        error: uploadError instanceof Error ? uploadError.message : uploadError
+      })
+      return
+    }
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      { profilePic: uploadResponse.secure_url },
+      { new: true }
+    )
+    // Successful response
+    res.status(200).json({
+      success: true,
+      message: "User's profile picture successfully updated",
+      updatedUser: updatedUser
+    })
+  } catch(error) {
+    console.error(`Error on profile picture update: ${error instanceof Error ? error.message : error}`)
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while attempting to upload profile picture",
+      error: error instanceof Error ? error.message : error
+    })
+  }
+  return
+} // End of updateProfile controller
+
+
+/*
+* @desc: Check if user is authenticated
+* @route: /api/auth/check
+* @method: GET
+* @access: Private
+*/
+export const isAuthenticated = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "User is authenticated",
+      user: req.user
+    })
+  } catch(error) {
+    console.error(`Error checking authentication: ${error instanceof Error ? error.message : error}`)
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while attempting to check user's authentication state"
+    })
+  }
+} // End of isAuthenticated controller
