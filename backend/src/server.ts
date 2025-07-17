@@ -17,9 +17,10 @@ app.use(cookieParser())
 
 /* ROUTES */
 import authRouter from './routes/auth.routes.js'
+import messageRouter from './routes/message.routes.js'
 
 app.use('/api/auth', authRouter)
-
+app.use('/api/message', messageRouter)
 
 app.listen(PORT_ENV, ()=> {
   console.log(`Server listening on port ${PORT_ENV}...`)
