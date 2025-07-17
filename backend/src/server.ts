@@ -1,11 +1,11 @@
 /* ENVIRONMENT VARIABLES */
-import { PORT_ENV } from './config/env.js'
+import { PORT_ENV, CLIENT_URL } from './config/env.js'
 
 /* SERVER SETUP */
 import express from 'express'
 import connectDB from './config/dbConnection.js'
 import cookieParser from 'cookie-parser'
-
+import cors from 'cors'
 
 const app = express()
 connectDB()
@@ -13,6 +13,10 @@ connectDB()
 /* MIDDLEWARES */
 app.use(express.json())
 app.use(cookieParser())
+app.use(cors({
+  origin: CLIENT_URL,
+  credentials: true
+}))
 
 
 /* ROUTES */
