@@ -45,8 +45,8 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     const salt: string = await bcrypt.genSalt(SALT_ROUNDS)
     const hashedPassword: string = await bcrypt.hash(password, salt)
     // Creating the user
-    const user = new UserModel({ fullName, email, password: hashedPassword })
-    const createdUser = await user.save()
+    const newUser = new UserModel({ fullName, email, password: hashedPassword })
+    const createdUser = await newUser.save()
     // Generating JWT
     if(createdUser) {
       generateAccessToken(createdUser._id, res)
@@ -58,15 +58,13 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       })
       return
     }
+    // Fresh pull with desired fields
+    const freshUser = await UserModel.findById(createdUser._id).select("_id fullName email profilePic")
     // Successful response
     res.status(201).json({
       success: true,
       message: `New user '${createdUser.fullName}' successfully created`,
-      user: {
-        _id: createdUser._id,
-        fullName: createdUser.fullName,
-        email: createdUser.email
-      }
+      user: freshUser
     })
   } catch(error) {
     console.error(`Error on user sign-up: ${error instanceof Error ? error.message : error}`)
@@ -106,19 +104,18 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         success: false,
         message: "Invalid credentials."
       })
+      return
     }
     // Generating access and refresh tokens
     generateAccessToken(user._id, res)
     generateRefreshToken(user._id, res)
+    // Fresh user from DB, only desired fields
+    const freshUser = await UserModel.findById(user._id).select("_id fullName email profilePic")
     // Successful response
     res.status(200).json({
       success: true,
       message: `User successfully logged in`,
-      user: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email
-      }
+      user: freshUser
     })
   } catch(error) {
     console.error(`Error on user login: ${error instanceof Error ? error.message : error}`)
@@ -177,7 +174,7 @@ export const logout = (req: Request, res: Response) => {
 
 /*
 * @desc: Updates user's profile pic
-* @route: /api/auth/uptdate-profile
+* @route: /api/auth/update-profile
 * @method: PUT
 * @access: Private
 */
@@ -202,6 +199,14 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
     let uploadResponse: UploadApiResponse | undefined = undefined
     try {
       uploadResponse = await cloudinary.uploader.upload(profilePic)
+
+      if(!uploadResponse?.secure_url) {
+        res.status(500).json({
+          success: false,
+          message: "Cloudinary did not return a valid URL",
+        })
+        return
+      }
     } catch(uploadError) {
       console.error(`Cloudinary upload error: ${uploadError instanceof Error ? uploadError.message : uploadError}`)
       res.status(500).json({
