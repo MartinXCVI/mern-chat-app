@@ -28,7 +28,7 @@ const Navbar = (): JSX.Element => {
               <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5 text-primary" />
               </div>
-              <h1 className="text-lg font-bold">Chatty</h1>
+              <h1 className="text-lg font-bold">MERN Chat</h1>
             </Link>
           </div>
 
@@ -49,7 +49,7 @@ const Navbar = (): JSX.Element => {
                 </Link>
 
                 <button
-                  className="flex gap-2 items-center"
+                  className="btn btn-sm flex gap-2 items-center cursor-pointer"
                   onClick={handleLogout}
                   aria-label='Logout button'
                 >

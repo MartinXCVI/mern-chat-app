@@ -2,7 +2,7 @@
 import { create } from "zustand";
 // Types/Interfaces
 import type { IAuthStore } from "../interfaces/IAuthStore";
-import type { IAuthUser } from "../interfaces/IAuthUser";
+import type { IAuthResponse } from "../interfaces/IAuthResponse";
 // Utilities
 import { axiosInstance } from "../libs/axios";
 import toast from "react-hot-toast";
@@ -18,8 +18,8 @@ export const useAuthStore = create<IAuthStore>((set) => ({
 
   checkAuth: async () => {
     try {
-      const res = await axiosInstance.get<IAuthUser>("/auth/is-auth")
-      set({ authUser: res.data })
+      const res = await axiosInstance.get<IAuthResponse>("/auth/is-auth")
+      set({ authUser: res.data?.user })
     } catch(error) {
       console.error(`Error checking user authentication: ${error instanceof Error ? error.message : error}`)
       set({ authUser: null })
@@ -31,9 +31,9 @@ export const useAuthStore = create<IAuthStore>((set) => ({
   signup: async (data) => {
     set({ isSigningUp: true })
     try {
-      const res = await axiosInstance.post<IAuthUser>("/auth/signup", data)
+      const res = await axiosInstance.post<IAuthResponse>("/auth/signup", data)
       toast.success("Account succesfully created!")
-      set({ authUser: res.data })
+      set({ authUser: res.data?.user })
     } catch(error) {
       if(error instanceof Error) {
         console.error(`Error on user signup: ${error.message || error}`)
@@ -50,8 +50,8 @@ export const useAuthStore = create<IAuthStore>((set) => ({
   login: async (data) => {
     set({ isLoggingIn: true })
     try {
-      const res = await axiosInstance.post<IAuthUser>("/auth/login", data)
-      set({ authUser: res.data })
+      const res = await axiosInstance.post<IAuthResponse>("/auth/login", data)
+      set({ authUser: res.data?.user })
       toast.success("Logged in successfully")
     } catch(error) {
       if(error instanceof Error) {
@@ -79,6 +79,29 @@ export const useAuthStore = create<IAuthStore>((set) => ({
         console.error(`Error on user logout: ${error}`)
         toast.error("Error on user logout. Try again later")
       }
+    }
+  },
+
+  updateProfile: async (data) => {
+    set({ isUpdatingProfile: true })
+    try {
+      const res = await axiosInstance.put("/auth/update-profile", data)
+      if(res.data.success && res.data.updatedUser) {
+        set({ authUser: res.data.updatedUser })
+        toast.success("Profile updated successfully")
+      } else {
+        toast.error(res.data.message || "Profile update failed")
+      }
+    } catch(error) {
+      if(error instanceof Error) {
+        console.error(`Error on profile update: ${error.message || error}`)
+        toast.error(error.message)
+      } else {
+        console.error(`Error on profile update: ${error}`)
+        toast.error("Error on profile update. Try again later")
+      }
+    } finally {
+      set({ isUpdatingProfile: false })
     }
   }
 }))
