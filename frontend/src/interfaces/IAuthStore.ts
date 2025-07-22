@@ -8,6 +8,7 @@ export interface IAuthStore {
   isSigningUp: boolean;
   isLoggingIn: boolean;
   isUpdatingProfile: boolean;
+  onlineUsers: IAuthUser[],
   isCheckingAuth: boolean;
   checkAuth: ()=> Promise<void>;
   signup: (data: ISignUpData)=> Promise<void>;
