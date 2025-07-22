@@ -7,14 +7,14 @@ import cloudinary from "../lib/cloudinary.js"
 
 /*
 * @desc: Get users list to display on the panel's sidebar
-* @route: /api/message/users
+* @route: /api/messages/users
 * @method: GET
 * @access: Private
 */
 export const getUsersForSidebar = async (req: Request, res: Response): Promise<void> => {
   // Getting user id from the request
-  const loggedInUserId = req.user._id
-  if(loggedInUserId) {
+  const loggedInUserId = req.user?._id
+  if(!loggedInUserId) {
     res.status(400).json({
       success: false,
       message: "Unauthorized: User not found in the request"
@@ -46,7 +46,7 @@ export const getUsersForSidebar = async (req: Request, res: Response): Promise<v
 
 /*
 * @desc: Get users messages
-* @route: /api/message/:id
+* @route: /api/messages/:id
 * @method: GET
 * @access: Private
 */
@@ -105,7 +105,7 @@ export const getMessages = async (req: Request, res: Response): Promise<void> =>
 
 /*
 * @desc: Send message
-* @route: /api/message/send/:id
+* @route: /api/messages/send/:id
 * @method: POST
 * @access: Private
 */
@@ -114,7 +114,7 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
   const { text, image } = req.body
   const { id: receiverId } = req.params
   const senderId = req.user?._id
-  // Validations
+  // Message validations
   if(!senderId) {
     res.status(400).json({
       success: false,
@@ -122,7 +122,7 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
     })
     return
   }
-  if(!receiverId || mongoose.Types.ObjectId.isValid(receiverId)) {
+  if(!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
     res.status(400).json({
       success: false,
       message: "Invalid receiver ID"
@@ -135,6 +135,25 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
       message: "Message must contain text or an image"
     })
     return
+  }
+  // Image validations
+  if(image) {
+    const isBase64 = /^data:image\/(png|jpeg|jpg|webp);base64,/.test(image)
+    if(!isBase64) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid image format"
+      })
+      return
+    }
+    const MAX_BASE64_LENGTH = 7_000_000 // ~5MB binary
+    if(image.length > MAX_BASE64_LENGTH) {
+      res.status(400).json({
+        success: false,
+        message: "Image too large. Max 5MB"
+      })
+      return
+    }
   }
   // Attempting to create & send message
   try {

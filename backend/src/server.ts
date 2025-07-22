@@ -11,7 +11,7 @@ const app = express()
 connectDB()
 
 /* MIDDLEWARES */
-app.use(express.json())
+app.use(express.json({ limit: "5mb" }))
 app.use(cookieParser())
 app.use(cors({
   origin: CLIENT_URL,
@@ -24,7 +24,7 @@ import authRouter from './routes/auth.routes.js'
 import messageRouter from './routes/message.routes.js'
 
 app.use('/api/auth', authRouter)
-app.use('/api/message', messageRouter)
+app.use('/api/messages', messageRouter)
 
 app.listen(PORT_ENV, ()=> {
   console.log(`Server listening on port ${PORT_ENV}...`)
