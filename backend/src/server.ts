@@ -6,15 +6,16 @@ import express from 'express'
 import connectDB from './config/dbConnection.js'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import { app, server } from './libs/socket.js'
 
-const app = express()
 connectDB()
+
 
 /* MIDDLEWARES */
 app.use(express.json({ limit: "5mb" }))
 app.use(cookieParser())
 app.use(cors({
-  origin: CLIENT_URL,
+  origin: [CLIENT_URL],
   credentials: true
 }))
 
@@ -26,6 +27,6 @@ import messageRouter from './routes/message.routes.js'
 app.use('/api/auth', authRouter)
 app.use('/api/messages', messageRouter)
 
-app.listen(PORT_ENV, ()=> {
+server.listen(PORT_ENV, ()=> {
   console.log(`Server listening on port ${PORT_ENV}...`)
 })

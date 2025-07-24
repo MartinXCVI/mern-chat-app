@@ -23,7 +23,7 @@ const Sidebar = (): JSX.Element => {
   }, [getUsers])
 
   const isUserOnline = (id?: string): boolean => {
-    return !!id && onlineUsers.some((onlineUser) => onlineUser._id === id)
+    return !!id && onlineUsers.includes(id)
   }
 
   const filteredUsers = showOnlineOnly

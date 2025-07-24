@@ -9,7 +9,7 @@ import { SALT_ROUNDS, NODE_ENV } from "../config/env.js"
 /* Helprs/Utilities */
 import { generateAccessToken } from "../helpers/generateAccessToken.js"
 import { generateRefreshToken } from "../helpers/generateRefreshToken.js"
-import cloudinary from "../lib/cloudinary.js"
+import cloudinary from "../libs/cloudinary.js"
 import { UploadApiResponse } from "cloudinary"
 
 

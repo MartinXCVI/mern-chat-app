@@ -2,7 +2,9 @@ import { Request, Response } from "express"
 import mongoose from "mongoose"
 import UserModel from "../models/User.model.js"
 import MessageModel from "../models/Message.model.js"
-import cloudinary from "../lib/cloudinary.js"
+import cloudinary from "../libs/cloudinary.js"
+import { getReceiverSocketId } from "../libs/socket.js"
+import { io } from "../libs/socket.js"
 
 
 /*
@@ -172,8 +174,12 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
     })
     const savedMessage = await newMessage.save()
 
-    /* Socket implementation goes here */
-
+    /* Socket implementation */
+    const receiverSocketId = getReceiverSocketId(receiverId)
+    if(receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage)
+    }
+    
     // Successful response
     res.status(201).json({
       success: true,

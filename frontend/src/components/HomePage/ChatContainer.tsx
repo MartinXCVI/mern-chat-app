@@ -1,7 +1,7 @@
 // React imports
 import type { JSX } from 'react'
 // React hooks imports
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 // Global state
 import { useChatStore } from '../../store/useChatStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -15,14 +15,25 @@ import { formatMessageTime } from '../../utils/formatMessageTime'
 
 const ChatContainer = (): JSX.Element => {
 
-  const { messages, getMessages, areMessagesLoading, selectedUser } = useChatStore()
+  const { messages, getMessages, areMessagesLoading, selectedUser, subscribeToMessages, unsubscribeFromMessages } = useChatStore()
   const { authUser } = useAuthStore()
+  const messageEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(()=> {
     if(selectedUser?._id) {
       getMessages(selectedUser._id)
+
+      subscribeToMessages()
+
+      return ()=> unsubscribeFromMessages()
     }
-  }, [selectedUser?._id, getMessages])
+  }, [selectedUser?._id, getMessages, subscribeToMessages, unsubscribeFromMessages])
+
+  useEffect(()=> {
+    if(messageEndRef.current && messages) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [messages])
 
   if(areMessagesLoading) {
     return (
@@ -44,6 +55,7 @@ const ChatContainer = (): JSX.Element => {
             className={`chat ${message.senderId === authUser?._id
               ? "chat-end" : "chat-start"
             }`}
+            ref={messageEndRef}
           >
             <div  className='chat-image avatar'>
               <div className='size-10 rounded-full border'>

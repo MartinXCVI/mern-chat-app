@@ -4,6 +4,7 @@ import { axiosInstance } from '../libs/axios'
 import type { IChatStore } from '../interfaces/IChatStore'
 import type { IAuthUser } from '../interfaces/IAuthUser'
 import type { IMessage } from '../interfaces/IMessage'
+import { useAuthStore } from './useAuthStore'
 
 
 export const useChatStore = create<IChatStore>((set, get)=> ({
@@ -69,6 +70,23 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
         toast.error("Error sending message. Try again later")
       }
     }
+  },
+
+  subscribeToMessages: () => {
+    const { selectedUser } = get()
+    if(!selectedUser) return;
+
+    const socket = useAuthStore.getState().socket
+    
+    // Improve later
+    socket?.on("newMessage", (newMessage)=> {
+      set({ messages: [...get().messages, newMessage] })
+    })
+  },
+
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket
+    socket?.off("newMessage")
   },
 
   setSelectedUser: (user) => set({ selectedUser: user })

@@ -12,7 +12,7 @@ const ChatHeader = (): JSX.Element => {
   const { onlineUsers } = useAuthStore()
 
   const isUserOnline = (id?: string): boolean => {
-    return !!id && onlineUsers.some((onlineUser) => onlineUser._id === id)
+    return !!id && onlineUsers.includes(id)
   }
 
   return (
