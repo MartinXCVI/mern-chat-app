@@ -7,6 +7,12 @@ import { getReceiverSocketId } from "../libs/socket.js"
 import { io } from "../libs/socket.js"
 
 
+// Constants
+const MAX_MESSAGE_LENGTH = 1000
+const MAX_BASE64_LENGTH = 7_000_000 // ~5MB binary
+const SUPPORTED_IMAGE_FORMATS = /^data:image\/(png|jpeg|jpg|webp);base64,/
+
+
 /*
 * @desc: Get users list to display on the panel's sidebar
 * @route: /api/messages/users
@@ -55,10 +61,10 @@ export const getUsersForSidebar = async (req: Request, res: Response): Promise<v
 export const getMessages = async (req: Request, res: Response): Promise<void> => {
   // Getting ids from the requests
   const { id: userToChatId } = req.params
-  const myId = req.user._id
+  const myId = req.user?._id
   // Validations
   if(!myId) {
-    res.status(400).json({
+    res.status(401).json({
       success: false,
       message: "Unauthorized: User not found in the request",
     })
@@ -67,7 +73,7 @@ export const getMessages = async (req: Request, res: Response): Promise<void> =>
   if(!userToChatId) {
     res.status(400).json({
       success: false,
-      message: "Missing or invalid user ID parameter"
+      message: "User ID parameter is required"
     })
     return
   }
@@ -78,6 +84,13 @@ export const getMessages = async (req: Request, res: Response): Promise<void> =>
     })
     return
   }
+    if(myId === userToChatId) {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot retrieve messages with yourself',
+      })
+      return
+    }
   // Attempting to retrieve users' messages
   try {
     const messages = await MessageModel.find({
@@ -118,12 +131,13 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
   const senderId = req.user?._id
   // Message validations
   if(!senderId) {
-    res.status(400).json({
+    res.status(401).json({
       success: false,
       message: "Unauthorized: Sender not found"
     })
     return
   }
+  // Receiver validation
   if(!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
     res.status(400).json({
       success: false,
@@ -131,24 +145,40 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
     })
     return
   }
-  if(!text?.trim() && !image) {
+  // Prevent sending messages to self
+  if(senderId === receiverId) {
+    res.status(400).json({
+      success: false,
+      message: 'Cannot send message to yourself',
+    })
+    return
+  }
+  // Content validation
+  const trimmedText = text?.trim()
+  if(!trimmedText && !image) {
     res.status(400).json({
       success: false,
       message: "Message must contain text or an image"
     })
     return
   }
+  // Text length validation
+  if(trimmedText && trimmedText.length > MAX_MESSAGE_LENGTH) {
+    res.status(400).json({
+      success: false,
+      message: `Message text cannot exceed ${MAX_MESSAGE_LENGTH} characters`,
+    })
+    return
+  }
   // Image validations
   if(image) {
-    const isBase64 = /^data:image\/(png|jpeg|jpg|webp);base64,/.test(image)
-    if(!isBase64) {
+    if(!SUPPORTED_IMAGE_FORMATS.test(image)) {
       res.status(400).json({
         success: false,
-        message: "Invalid image format"
+        message: "Invalid image format. Supported formats: PNG, JPEG, JPG, WebP"
       })
       return
     }
-    const MAX_BASE64_LENGTH = 7_000_000 // ~5MB binary
     if(image.length > MAX_BASE64_LENGTH) {
       res.status(400).json({
         success: false,
@@ -160,17 +190,31 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
   // Attempting to create & send message
   try {
     // Uploading image (if any)
-    let imageUrl
+    let imageUrl: string | null = null
     if(image) {
-      const uploadResponse = await cloudinary.uploader.upload(image)
-      imageUrl = uploadResponse.secure_url
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(image, {
+          folder: 'chat-messages',
+          resource_type: 'image',
+          quality: 'auto:good',
+          fetch_format: 'auto',
+        })
+        imageUrl = uploadResponse.secure_url
+      } catch(uploadError) {
+        console.error('Image upload error:', uploadError)
+        res.status(400).json({
+          success: false,
+          message: 'Failed to upload image. Please try again.',
+        })
+        return
+      }
     }
-    // Creating & storing new message
+    // Creating & saving new message
     const newMessage = new MessageModel({
       senderId,
       receiverId,
       text: text?.trim() || "",
-      image: imageUrl || null
+      image: imageUrl
     })
     const savedMessage = await newMessage.save()
 

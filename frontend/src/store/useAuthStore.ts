@@ -8,7 +8,11 @@ import { axiosInstance } from "../libs/axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-
+/**
+* Zustand Auth Store.
+* Handles user authentication state, profile updates, and socket connections.
+* @module useAuthStore
+*/
 export const useAuthStore = create<IAuthStore>((set, get) => ({
   authUser: null,
   isSigningUp: false,
@@ -18,6 +22,10 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
   isCheckingAuth: true,
   socket: null,
 
+  /**
+  * Check if the user is authenticated.
+  * If authenticated, sets authUser and connects the socket.
+  */
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get<IAuthResponse>("/auth/is-auth")
@@ -31,6 +39,11 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
     }
   },
 
+  /**
+   * @description Register a new user account.
+   * On success, sets authUser and connects the socket.
+   * @param { ISignUpData } data - New user data: success, message, user
+   */
   signup: async (data) => {
     set({ isSigningUp: true })
     try {
@@ -51,6 +64,11 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
     }
   },
 
+  /**
+  * @description Log in an existing user.
+  * On success, sets authUser and connects the socket.
+  * @param { ILoginData } data - Login credentials: email, password
+  */
   login: async (data) => {
     set({ isLoggingIn: true })
     try {
@@ -71,6 +89,10 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
     }
   },
 
+  /**
+  * Log out the current user.
+  * Clears authUser and disconnects the socket.
+  */
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout")
@@ -88,6 +110,10 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
     }
   },
 
+  /**
+  * @description Update the user's profile picture
+  * @param { IUpdateProfileData } data - Profile picture
+  */
   updateProfile: async (data) => {
     set({ isUpdatingProfile: true })
     try {
@@ -111,10 +137,20 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
     }
   },
 
+  /**
+  * @description Connects the Socket.IO client using the current user's ID.
+  * Handles relevant socket events.
+  */
   connectSocket: ()=> {
     const { authUser } = get()
 
-    if(!authUser || get().socket?.connected) return;
+    if(!authUser) return;
+
+    // Disconnecting existing socket first
+    const existingSocket = get().socket
+    if(!existingSocket?.connected) {
+      existingSocket?.disconnect()
+    }
 
     const socket = io(import.meta.env.VITE_SOCKET_URL, {
       query: { userId: authUser._id },
@@ -125,26 +161,35 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
 
     set({ socket: socket })
 
-    socket.on("connect", () => {
-      console.log("Socket successfully connected.")
-    })
+    if(import.meta.env.DEV) { // development only
+      socket.on("connect", () => {
+        console.log("Socket successfully connected.")
+      })
 
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error.message)
-    })
+      socket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error.message)
+      })
 
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason)
-    })
+      socket.on("disconnect", (reason) => {
+        console.log("Socket disconnected:", reason)
+      })
 
-    socket.on("getOnlineUsers", (userIds)=> {
-      set({ onlineUsers: userIds })
-    })
+      socket.on("getOnlineUsers", (userIds)=> {
+        set({ onlineUsers: userIds })
+      })
+    }
   },
 
+  /**
+  * @description Disconnects the current Socket.IO client and cleans up listeners.
+  */
   disconnectSocket: ()=> {
-    if(get().socket?.connected) {
-      get().socket?.disconnect()
+    const socket = get().socket
+    if(socket?.connected) {
+      socket?.removeAllListeners()
+      socket?.disconnect()
     }
-  }
-}))
+    set({ socket: null })
+  },
+
+})) // End of useAuthStore

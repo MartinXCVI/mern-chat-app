@@ -23,13 +23,14 @@ const App = (): JSX.Element => {
   const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore()
   const { theme } = useThemeStore()
 
-  console.log("App online users:", onlineUsers)
-
-  useEffect(()=> {
+    useEffect(()=> {
     void checkAuth()
   }, [checkAuth])
 
-  //console.log({ authUser }) // development
+  if(import.meta.env.DEV) { // development only
+    console.log({ authUser }) 
+    console.log("App online users:", onlineUsers)
+  }
 
   if(isCheckingAuth && !authUser) {
     return (
