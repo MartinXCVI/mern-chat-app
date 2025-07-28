@@ -5,5 +5,5 @@ export interface IMessage {
   text: string;
   image?: string;
   createdAt: string;
-  status?: string;
+  status?: 'sending' | 'sent' | 'delivered' | 'read'
 }

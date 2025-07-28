@@ -19,7 +19,9 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
   areUsersLoading: false,
   areMessagesLoading: false,
   messageCleanup: null,
+  typingUsers: new Map(),
 
+  
   /**
   * @description Fetch the list of available chat users.
   */
@@ -40,6 +42,7 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
       set({ areUsersLoading: false })
     }
   },
+
 
   /**
   * Fetch messages for the specified user.
@@ -63,8 +66,10 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
     }
   },
 
+
   /**
   * @description Send a new message to the selected user.
+  * Uses HTTP for persistence and socket for real-time delivery.
   * Adds an optimistic message while waiting for server confirmation.
   * @param { INewMessage } messageData - The message content to send.
   */
@@ -76,10 +81,16 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
 
     const { selectedUser } = get()
     const currentUser = useAuthStore.getState().authUser
+    const socket = useAuthStore.getState().socket
 
     if (!selectedUser?._id || !currentUser) {
-      toast.error("No recipient selected.");
-      return;
+      toast.error("No recipient selected.")
+      return
+    }
+
+    if(!socket?.connected) {
+      toast.error("Connection lost. Please refresh the page.")
+      return
     }
 
     const optimisticMessage: IMessage = {
@@ -91,13 +102,15 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
       status: "sending"
     }
 
+    // Adding optimistic message to UI immediately
     set((state)=> ({
       messages: [...state.messages, optimisticMessage]
     }))
     
     try {
+      // Sending via HTTP for persistence
       const res = await axiosInstance.post<{ newMessage: IMessage }>(`/messages/send/${selectedUser?._id}`, messageData)
-
+      // Updating optimistic message with real data
       set((state)=> ({
         messages: state.messages.map(message => {
           return message._id === optimisticMessage._id ? res.data.newMessage : message
@@ -118,11 +131,29 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
     }
   },
 
+
   /**
-  * @description Subscribe to incoming messages from the server socket.
-  * Only listens for messages related to the selected user.
+  * @description Send typing indicator to the selected user.
+  * @param { boolean } isTyping - Whether the user is currently typing
+  */
+  sendTypingIndicator: (isTyping: boolean)=> {
+    const { selectedUser } = get()
+    const socket = useAuthStore.getState().socket
+
+    if(!selectedUser?._id || !socket?.connected) return;
+
+    socket.emit('typing', {
+      receiverId: selectedUser._id,
+      isTyping
+    })
+  },
+
+
+  /**
+  * @description Subscribe to real-time socket events for the current conversation.
+  * Handles incoming messages, typing indicators, and user status updates.
   * Cleans up any previous subscription first.
-  * @returns { () => Socket | null } - Cleanup function to unsubscribe.
+  * @returns { () => void } - Cleanup function to unsubscribe.
   */
   subscribeToMessages: () => {
     const { selectedUser } = get()
@@ -133,13 +164,21 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
 
     const socket = useAuthStore.getState().socket
     if(!socket) {
-      console.error("User socket state could not be retrieved")
+      console.error("Socket not available for message subscription")
       return
     }
 
     const currentUserId = useAuthStore.getState().authUser?._id
+    if(!currentUserId) return;
     
+    console.log(`Subscribing to messages for conversation with ${selectedUser._id}`)
+
+    /**
+     * Handle incoming messages
+     * Only show messages relevant to current conversation
+     */
     const handleNewMessage = (newMessage: IMessage) => {
+      console.log(`Received new message: ${newMessage}`)
       // Show messages in conversation between current user & selected user
       const isRelevantMessage: boolean =
         (newMessage.senderId === selectedUser._id && newMessage.receiverId === currentUserId) ||
@@ -158,36 +197,119 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
       })
     } // End: handlenewMessage
 
-    socket?.on("newMessage", handleNewMessage)
+    // Handling typing indicators: Showing when the selected user is typing
+    const handleUserTyping = (data: { senderId: string; isTyping: boolean }) => {
+      console.log(`Typing indicator: ${data}`)
 
-    const cleanup = ()=> socket?.off("newMessage", handleNewMessage)
+      if(data.senderId !== selectedUser._id) return;
+
+      set((state) => {
+        const newTypingUsers = new Map(state.typingUsers)
+        
+        if(data.isTyping) {
+          newTypingUsers.set(data.senderId, true)
+        } else {
+          newTypingUsers.delete(data.senderId)
+        }
+        
+        return { typingUsers: newTypingUsers }
+      })
+    }
+
+    /* Handle connection status changes */
+    const handleConnect = () => {
+      console.log('Socket reconnected in chat')
+    }
+    const handleDisconnect = (reason: string) => {
+      console.log(`Socket disconnected in chat: ${reason}`)
+      // Clear typing indicators on disconnect
+      set({ typingUsers: new Map() })
+    }
+
+    // Event listeners set up
+    socket.on("newMessage", handleNewMessage)
+    socket.on("userTyping", handleUserTyping)
+    socket.on("connect", handleConnect)
+    socket.on("disconnect", handleDisconnect)
+
+    const cleanup = () => {
+      console.log('🧹 Cleaning up message subscription')
+      socket.off("newMessage", handleNewMessage)
+      socket.off("userTyping", handleUserTyping)
+      socket.off("connect", handleConnect)
+      socket.off("disconnect", handleDisconnect)
+    }
+
     set({ messageCleanup: cleanup })
 
     return cleanup
-  },
+  }, // End of subscribeToMessage 
+
 
   /**
   * @description Unsubscribe from the current message socket listener.
-  * Clears the cleanup reference.
+  * Clears the cleanup reference and typing indicators.
   */
   unsubscribeFromMessages: () => {
     const { messageCleanup } = get()
 
     if(messageCleanup) {
       messageCleanup()
-      set({ messageCleanup: null })
+      set({
+        messageCleanup: null,
+        typingUsers: new Map() // Clearing typing indicators
+      })
     }
   },
 
+
   /**
   * Set the active user for the chat.
-  * Also unsubscribes from any existing message listener.
+  * Unsubscribes from existing listeners and resets conversation state.
   * @param { IAuthUser } user - The user to set as active.
   */
   setSelectedUser: (user) => {
+    console.log('Setting selected user:', user?.fullName || user?._id)
     // Cleaning up existing subscription before switching
     get().unsubscribeFromMessages()
-    set({ selectedUser: user })
+    set({
+      selectedUser: user,
+      messages: [], // Clearing messages when switching users
+      typingUsers: new Map() // Clearing typing indicators
+    })
+    // If user is selected, fetch their messages and subscribe to updates
+    if (user?._id) {
+      get().getMessages(user._id)
+      // Small delay to ensure messages are loaded before subscribing
+      setTimeout(() => {
+        get().subscribeToMessages()
+      }, 100)
+    }
+  }, // End of setSelectedUser
+
+
+  /**
+  * @description Check if a user is currently typing
+  * @param { string } userId - The user ID to check
+  * @returns { boolean } - Whether the user is typing
+  */
+  isUserTyping: (userId: string) => {
+    return get().typingUsers.has(userId)
   },
+
+
+  /**
+  * @description Clear all messages (useful for logout)
+  */
+  clearMessages: () => {
+    get().unsubscribeFromMessages()
+    set({
+      messages: [],
+      users: [],
+      selectedUser: null,
+      typingUsers: new Map()
+    })
+  }
+
 
 })) // End of useChatStore

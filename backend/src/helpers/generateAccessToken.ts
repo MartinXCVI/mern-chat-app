@@ -4,8 +4,12 @@ import { JWT_SECRET, NODE_ENV } from "../config/env.js"
 import { Types } from "mongoose"
 
 
-export const generateAccessToken = (userId: Types.ObjectId, res: Response): string => {
-  const token = jwt.sign({userId}, JWT_SECRET, { expiresIn: "15m"})
+export const generateAccessToken = (userId: Types.ObjectId, userEmail: string, res: Response): string => {
+  const token = jwt.sign(
+    { userId, email: userEmail },
+    JWT_SECRET,
+    { expiresIn: "15m"}
+  )
 
   res.cookie("accessToken", token, {
     maxAge: 15 * 60 * 1000, // Miliseconds - 15 minutes
@@ -13,5 +17,6 @@ export const generateAccessToken = (userId: Types.ObjectId, res: Response): stri
     sameSite: NODE_ENV === 'production' ? 'none' : 'lax', // Prevents CSRF
     secure: NODE_ENV !== "development"
   })
+  // Returning token for frontend
   return token
 }

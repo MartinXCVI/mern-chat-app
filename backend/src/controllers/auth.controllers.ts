@@ -49,8 +49,8 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     const createdUser = await newUser.save()
     // Generating JWT
     if(createdUser) {
-      generateAccessToken(createdUser._id, res)
-      generateRefreshToken(createdUser._id, res)
+      generateAccessToken(createdUser._id, createdUser.email, res)
+      generateRefreshToken(createdUser._id, createdUser.email, res)
     } else {
       res.status(400).json({
         success: false,
@@ -107,15 +107,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return
     }
     // Generating access and refresh tokens
-    generateAccessToken(user._id, res)
-    generateRefreshToken(user._id, res)
+    const accessToken = generateAccessToken(user._id, user.email, res)
+    const refreshToken = generateRefreshToken(user._id, user.email, res)
     // Fresh user from DB, only desired fields
     const freshUser = await UserModel.findById(user._id).select("_id fullName email profilePic")
     // Successful response
     res.status(200).json({
       success: true,
       message: `User successfully logged in`,
-      user: freshUser
+      user: freshUser,
+      token: accessToken,
+      refreshToken: refreshToken
     })
   } catch(error) {
     console.error(`Error on user login: ${error instanceof Error ? error.message : error}`)
