@@ -15,7 +15,8 @@ import { formatMessageTime } from '../../utils/formatMessageTime'
 
 const ChatContainer = (): JSX.Element => {
 
-  const { messages, getMessages, areMessagesLoading, selectedUser, subscribeToMessages, unsubscribeFromMessages } = useChatStore()
+  const { messages, getMessages, areMessagesLoading,selectedUser,
+    subscribeToMessages, unsubscribeFromMessages, isUserTyping } = useChatStore()
   const { authUser } = useAuthStore()
   const messageEndRef = useRef<HTMLDivElement>(null)
 
@@ -44,6 +45,9 @@ const ChatContainer = (): JSX.Element => {
       </div>
     )
   }
+
+  // Check if the selected user is typing
+  const isSelectedUserTyping = selectedUser?._id ? isUserTyping(selectedUser._id) : false
 
   return (
     <div className='flex-1 flex flex-col overflow-auto'>
@@ -89,6 +93,28 @@ const ChatContainer = (): JSX.Element => {
             </div>
           </div>
         ))}
+
+        {/* Typing Indicator */}
+        {isSelectedUserTyping && (
+          <div className="chat chat-start">
+            <div className='chat-image avatar'>
+              <div className='size-10 rounded-full border'>
+                <img
+                  src={selectedUser?.profilePic || "/avatar.png"}
+                  alt={`Profile picture of ${selectedUser?.fullName}`}
+                />
+              </div>
+            </div>
+            <div className='chat-bubble bg-base-200 flex items-center gap-1 py-2 px-4'>
+              <span className="text-sm opacity-70">{selectedUser?.fullName} is typing</span>
+              <div className="flex gap-1 ml-2">
+                <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <MessageInput />
     </div>

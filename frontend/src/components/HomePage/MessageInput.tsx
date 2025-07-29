@@ -1,7 +1,7 @@
 // React imports
 import type { JSX, ChangeEvent, FormEvent } from 'react'
 // React hooks imports
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 // Global state
 import { useChatStore } from '../../store/useChatStore'
 // Icons
@@ -15,8 +15,51 @@ const MessageInput = (): JSX.Element => {
   const [text, setText] = useState<string>("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { sendMessage } = useChatStore()
+  const typingTimeoutRef = useRef<number | null>(null)
+  const { sendMessage, sendTypingIndicator } = useChatStore()
 
+  // Debounced typing indicator function
+  const handleTypingIndicator = useCallback((isTyping: boolean) => {
+    sendTypingIndicator(isTyping)
+    
+    if(isTyping) {
+      // Clear existing timeout
+      if(typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+      // Setting timeout to stop typing indicator after 3 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTypingIndicator(false)
+      }, 3000)
+    }
+  }, [sendTypingIndicator])
+
+  // Handle text input changes
+  const handleTextChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const newText = event.target.value
+    setText(newText)
+    // Send typing indicator when user starts typing
+    if(newText.length > 0 && text.length === 0) {
+      handleTypingIndicator(true)
+    }
+    // Stop typing indicator when input becomes empty
+    else if(newText.length === 0 && text.length > 0) {
+      handleTypingIndicator(false)
+    }
+    // Continue typing indicator for existing text
+    else if(newText.length > 0) {
+      handleTypingIndicator(true)
+    }
+  }
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0]
@@ -54,6 +97,12 @@ const MessageInput = (): JSX.Element => {
   const handleSendMessage = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     if(!text.trim() && !imagePreview) return;
+
+    // Stop typing indicator when sending message
+    sendTypingIndicator(false)
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
 
     try {
       await sendMessage({
@@ -104,7 +153,7 @@ const MessageInput = (): JSX.Element => {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
-            onChange={(event: ChangeEvent<HTMLInputElement>): void => setText(event.target.value)}
+            onChange={handleTextChange}
           />
           <input
             type="file"

@@ -293,6 +293,10 @@ io.on("connection", async (socket: IUserSocket)=> {
           senderId: userId,
           isTyping: data.isTyping,
         })
+        // Log typing events in development
+        if(process.env.NODE_ENV === 'development') {
+          console.log(`${userId} is ${data.isTyping ? 'typing to' : 'stopped typing to'} ${data.receiverId}`)
+        }
       }
     } catch(error) {
       console.error(`Error handling typing event from user ${userId}: ${error}`)
@@ -308,6 +312,13 @@ io.on("connection", async (socket: IUserSocket)=> {
   */
   socket.on("disconnect", (reason)=> {
     console.log(`User ${userId} (${email}) disconnected: ${reason}`)
+
+    // Clearing typing indicators for this user
+    // Notifying all connected users that this user stopped typing
+    socket.broadcast.emit('userTyping', {
+      senderId: userId,
+      isTyping: false
+    })
     // Clearing the heartbeat interval
     clearInterval(heartbeatInterval)
     // Cleaning up all mappings
