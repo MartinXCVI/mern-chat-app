@@ -233,7 +233,7 @@ export const useChatStore = create<IChatStore>((set, get)=> ({
     socket.on("disconnect", handleDisconnect)
 
     const cleanup = () => {
-      console.log('🧹 Cleaning up message subscription')
+      console.log('Cleaning up message subscription')
       socket.off("newMessage", handleNewMessage)
       socket.off("userTyping", handleUserTyping)
       socket.off("connect", handleConnect)

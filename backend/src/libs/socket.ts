@@ -141,7 +141,7 @@ const globalCleanupInterval = setInterval(() => {
 * 4. Forces exit after 5 seconds if graceful close fails
 */
 const gracefulShutdown = () => {
-  console.log('Initiating graceful shutdown of socket server...')
+  console.log('\nInitiating graceful shutdown of socket server...')
   // Clearing the global cleanup interval
   clearInterval(globalCleanupInterval)
   // Notify all connected clients about the shutdown

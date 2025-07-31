@@ -252,7 +252,7 @@ export const useAuthStore = create<IAuthStore>((set, get) => ({
       socket.onAny((event, ...args) => {
         // Filter out noisy events
         if (!['ping', 'pong', 'getOnlineUsers'].includes(event)) {
-          console.log(`🔄 Socket event '${event}':`, args)
+          console.log(`Socket event '${event}':`, args)
         }
       })
     }
