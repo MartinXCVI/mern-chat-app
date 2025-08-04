@@ -10,7 +10,7 @@ import { validateTypingData } from '../helpers/validateTypingData.js'
 * Real-time Socket.IO chat server
 * 
 * This module implements a websocket server for real-time chat functionalities
-* Includes user authentication, rate limiting, activity tracking, typing indicators,
+* Includes user authentication, activity tracking, typing indicators,
 * duplicate connection handling, and graceful shutdown mechanisms.
 */
 
@@ -57,28 +57,6 @@ const userSocketMap = new Map<string, { socketId: string; lastActivity: Date }>(
 */
 const socketUserMap = new Map<string, { userId: string; email: string }>()
 
-// Rate limiting for socket events
-const userEventCounts = new Map<string, { count: number; resetTime: number }>()
-const RATE_LIMIT_WINDOW = 60000 // 1 minute
-const RATE_LIMIT_MAX_EVENTS = 120 // 30 events per minute
-
-// Rate limit check for user events to prevent spam and abuse
-const checkRateLimit = (userId: string): boolean => {
-  const now = Date.now()
-  const userEvents = userEventCounts.get(userId)
-  // Resetting counter if window expired or user is new
-  if(!userEvents || now > userEvents.resetTime) {
-    userEventCounts.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return true
-  }
-  // Blocking if user exceeded the limit
-  if(userEvents.count >= RATE_LIMIT_MAX_EVENTS) {
-    return false
-  }
-  // Incrementing counter and allowing
-  userEvents.count++
-  return true
-}
 
 /**
 * Retrieves the socket ID for a specific user if they are active
@@ -229,7 +207,6 @@ io.on("connection", async (socket: IUserSocket)=> {
   socketUserMap.set(socket.id, { userId, email })
 
   console.log(`User ${userId} (${email}) connected with socket ${socket.id} in ${Date.now() - startTime}ms`);
-
   // Join user to their personal room for targeted messaging
   socket.join(userId)
   // Broadcasting updated online users
@@ -257,8 +234,7 @@ io.on("connection", async (socket: IUserSocket)=> {
 
   /**
   * Typing indicator event handler
-  * Manages real-time typing status between users
-  * Includes rate limiting, validation, and activity tracking
+  * Manages real-time typing status between users with validation
   * @event typing
   * @param { Object } data - Typing event data
   * @param { string } data.receiverId - ID of user receiving typing indicator
@@ -266,11 +242,6 @@ io.on("connection", async (socket: IUserSocket)=> {
   */
   socket.on('typing', (data: { receiverId: string; isTyping: boolean }) => {
     try {
-      // Rate limit check to prevent spam and abuse
-      if(!checkRateLimit(userId)) {
-        socket.emit('connectionError', 'Rate limit exceeded. Please slow down.')
-        return
-      }
       // Updating user activity/online status based on interaction 
       socket.lastActivity = new Date()
       const userInfo = userSocketMap.get(userId)
@@ -324,8 +295,6 @@ io.on("connection", async (socket: IUserSocket)=> {
     // Cleaning up all mappings
     userSocketMap.delete(userId)
     socketUserMap.delete(socket.id)
-    // Cleaning up rate limiting data
-    userEventCounts.delete(userId)
     // Broadcasting updated online users
     io.emit("getOnlineUsers", getOnlineUsers())
   })
