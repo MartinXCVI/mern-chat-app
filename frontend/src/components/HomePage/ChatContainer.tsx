@@ -89,7 +89,7 @@ const ChatContainer = (): JSX.Element => {
                   className='sm:max-w-[200px] rounded-md mb-2'
                 />
               )}
-              {message.text && <p>{message.text}</p>}
+              {message.text && <p className='overflow-x-auto'>{message.text}</p>}
             </div>
           </div>
         ))}
