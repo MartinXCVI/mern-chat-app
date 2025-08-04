@@ -60,7 +60,7 @@ const socketUserMap = new Map<string, { userId: string; email: string }>()
 // Rate limiting for socket events
 const userEventCounts = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT_WINDOW = 60000 // 1 minute
-const RATE_LIMIT_MAX_EVENTS = 30 // 30 events per minute
+const RATE_LIMIT_MAX_EVENTS = 120 // 30 events per minute
 
 // Rate limit check for user events to prevent spam and abuse
 const checkRateLimit = (userId: string): boolean => {
