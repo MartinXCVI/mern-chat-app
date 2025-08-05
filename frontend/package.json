@@ -1,8 +1,11 @@
 {
-  "name": "frontend",
+  "name": "mern-chat-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Frontend for MERN Chat App - A modern real-time chat application",
+  "author": "MartinXCVI",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -1,17 +1,26 @@
 {
-  "name": "backend",
+  "name": "mern-chat-backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
+  "main": "dist/server.js",
+  "description": "Backend API for MERN Chat App - A modern real-time chat application",
+    "author": "MartinXCVI",
+    "license": "MIT",
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "chat",
+    "real-time",
+    "socket.io",
+    "express",
+    "mongodb",
+    "typescript",
+    "authentication",
+    "api"
+  ],
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.9",
